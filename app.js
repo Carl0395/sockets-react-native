@@ -12,7 +12,10 @@ import {
     View,
     FlatList,
     TouchableOpacity,
-    TextInput
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
+    Image
 } from 'react-native';
 import SocketIoClient from 'socket.io-client';
 export default class Sockets extends Component {
@@ -22,7 +25,7 @@ export default class Sockets extends Component {
 
 
         this.state = {
-            dataSource: ['valor'],
+            dataSource: [{key: 0, value: 'valor'}],
             text: ''
         };
 
@@ -35,29 +38,30 @@ export default class Sockets extends Component {
 
     }
 
-    /** Cuando el servidor envia un mensaje
-     *
+    /**
+     * Cuando el servidor envia un mensaje
      */
     receiveMessage = (message) => {
-        console.warn("nuevo", message);
+        //console.warn("nuevo", message);
         let data = this.state.dataSource;
-        data.push(message);
+        data.push({key: data.length, value: message});
         this.setState({
             dataSource: data,
         })
     };
 
-    onSend(messages = []) {
-        this.socket.emit('message', {name: 'celular', text: 'prueba movil'});
+    onSend(message) {
+        this.socket.emit('message', message);
     }
 
 
 
-    _renderItem = (item) => {
-        console.warn(item.item)
+    renderItem = (item) => {
         return (
-            <View style={{flex: 1}}>
-                <Text style={{backgroundColor: 'red', top: 10}}>{item.item}</Text>
+            <View>
+                <View style={{backgroundColor: 'white', padding: 10, marginHorizontal: 10, borderWidth: 1, borderRadius: 5, marginVertical: 5}}>
+                    <Text style={{flex: 1, fontWeight: 'bold', maxHeight: 15}}>{item.value}</Text>
+                </View>
             </View>
         )
     };
@@ -70,9 +74,13 @@ export default class Sockets extends Component {
         console.warn(item, this.state.dataSource)
     };
 
+    sendMessageApp = (message) => {
+        this.onSend(message)
+    };
+
     render() {
         return (
-            <View style={styles.container}>
+            <KeyboardAvoidingView behavior={(Platform.OS === 'ios')? "padding" : null} style={styles.container}>
 
                 <FlatList
                     style={{top: 0, marginBottom: 4, right: 0, bottom: 40, marginTop: 20}}
@@ -81,26 +89,21 @@ export default class Sockets extends Component {
                     initialNumToRender={27}
                     scrollEnabled={false}
                     showsVerticalScrollIndicator={false}
-                    keyExtractor={item => item}
-                    renderItem={(item) => {
-                        return (
-                            <View>
-                                <View style={{alignItems: 'center'}}>
-                                    <Text style={{flex: 1, fontWeight: 'bold', maxHeight: 15}}>{item.item}</Text>
-                                </View>
-                            </View>
-                        )
-                    }}
+                    keyExtractor={item => item.key}
+                    renderItem={(item) => this.renderItem(item.item)}
                 />
 
-                <View style={{position: 'absolute', left: 0, right: 0, bottom: 0, height: 50, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#ccc'}}>
-                    <TextInput style={{height: 50, marginLeft: 10}}
-                            placeholder={"Escriba un mensaje"}/>
-                    <TouchableOpacity style={{position: 'absolute',}}>
-                        <Text>Button</Text>
+                <View style={{bottom: 0, height: 50, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#ccc'}}>
+                    <TextInput
+                        value={this.state.text}
+                        onChangeText={(text) => this.setState({text: text})}
+                        style={{height: 50, marginLeft: 10}}
+                        placeholder={"Escriba un mensaje"}/>
+                    <TouchableOpacity style={{position: 'absolute', right: 20, top: 15}} onPress={() => this.sendMessageApp(this.state.text)}>
+                        <Image source={require('./src/images/sent_mail.png')} borderColor={'#dcdcdc'} style={{width: 20, height: 20, tintColor: '#cccccc'}}/>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         );
     }
 }
